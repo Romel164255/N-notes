@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "./App.css";
 
+/* -------------------- COLOR THEME -------------------- */
 const DARK_COLORS = ["#1a1a1a", "#232323", "#2b2b2b", "#333", "#3d3d3d", "#444", "#555"];
 const getRandomColor = () => DARK_COLORS[Math.floor(Math.random() * DARK_COLORS.length)];
-
-const ORANGE = "#ff5e00"; // Nothing orange for delete animation
+const ORANGE = "#ff5e00"; // "Nothing" orange for delete animation
 
 /* -------------------- NOTE CARD COMPONENT -------------------- */
 function NoteCard({ note, onDelete, onEdit }) {
@@ -14,28 +14,28 @@ function NoteCard({ note, onDelete, onEdit }) {
       layout
       className="note-card"
       style={{ background: note.bgColor || "#222" }}
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{
         backgroundColor: ORANGE,
-        scaleX: 0,
+        scaleX: 0, // shrink horizontally
         opacity: 0,
-        transition: { duration: 0.6, ease: "easeInOut" },
         originX: 1, // shrink from right to left
+        transition: { duration: 0.6, ease: "easeInOut" },
       }}
       onClick={() => onEdit(note)}
     >
       <button
         className="delete-btn"
         onClick={(e) => {
-          e.stopPropagation(); // prevent triggering edit
+          e.stopPropagation();
           onDelete(note.id);
         }}
       >
         ✕
       </button>
-      <h3>{note.title}</h3>
-      <p>{note.content}</p>
+      <h3 className="note-title">{note.title}</h3>
+      <p className="note-body">{note.content}</p>
     </motion.div>
   );
 }
@@ -43,20 +43,23 @@ function NoteCard({ note, onDelete, onEdit }) {
 /* -------------------- MAIN HOME COMPONENT -------------------- */
 export default function Home() {
   const [notes, setNotes] = useState([]);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [headline, setHeadline] = useState("");
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
   const overlayRef = useRef();
 
-  /* -------------------- LOGIN CHECK + FETCH NOTES -------------------- */
+  /* -------------------- LOGIN + FETCH NOTES -------------------- */
   useEffect(() => {
     fetch("http://localhost:5000/auth/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        setLoggedIn(data.loggedIn);
-        if (data.loggedIn) loadNotes();
+        if (data.loggedIn) {
+          setUser(data.user);
+          loadNotes();
+        }
       });
   }, []);
 
@@ -68,40 +71,26 @@ export default function Home() {
     }
   }
 
-  /* -------------------- SOUND + VIBRATION HELPERS -------------------- */
-  function playDeleteSound() {
+  /* -------------------- SOUND + VIBRATION -------------------- */
+  const playSound = (freq = 400, type = "sine", duration = 0.25) => {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(180, ctx.currentTime);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-    osc.stop(ctx.currentTime + 0.18);
-  }
-
-  function playSaveSound() {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.type = type;
+    osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.12, ctx.currentTime);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.stop(ctx.currentTime + 0.25);
-  }
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.stop(ctx.currentTime + duration);
+  };
 
-  function triggerVibration() {
+  const triggerVibration = () => {
     if ("vibrate" in navigator) navigator.vibrate(70);
-  }
+  };
 
-  /* -------------------- ADD / EDIT / SAVE NOTES -------------------- */
+  /* -------------------- SAVE / EDIT / DELETE NOTES -------------------- */
   async function handleSave() {
     if (!headline.trim() && !content.trim()) {
       setEditing(false);
@@ -122,9 +111,8 @@ export default function Home() {
     });
 
     if (res.ok) {
-      playSaveSound(); // ✅ sound feedback
+      playSound(520, "sine", 0.25);
       triggerVibration();
-
       const newNote = await res.json();
       setNotes((prev) =>
         editingId
@@ -140,9 +128,8 @@ export default function Home() {
   }
 
   async function handleDelete(id) {
-    playDeleteSound(); // ✅ sound feedback
+    playSound(180, "triangle", 0.2);
     triggerVibration();
-
     const res = await fetch(`http://localhost:5000/api/notes/${id}`, {
       method: "DELETE",
       credentials: "include",
@@ -157,23 +144,58 @@ export default function Home() {
     setEditing(true);
   }
 
+  /* -------------------- AUTH ACTIONS -------------------- */
   const handleLogin = () => (window.location.href = "http://localhost:5000/auth/google");
   const handleLogout = () =>
     fetch("http://localhost:5000/auth/logout", { credentials: "include" }).then(() => {
-      setLoggedIn(false);
+      setUser(null);
       setNotes([]);
     });
+
+  const handleDeleteAll = async () => {
+    const confirmDelete = window.confirm("Delete all notes?");
+    if (!confirmDelete) return;
+    await fetch("http://localhost:5000/api/notes/all", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    setNotes([]);
+    playSound(150, "square", 0.3);
+  };
 
   /* -------------------- RENDER -------------------- */
   return (
     <div className="app-container">
-      {/* Header */}
+      {/* ---------- HEADER BAR ---------- */}
       <div className="top-bar">
         <div className="Main-head">Noting</div>
-        {loggedIn ? (
-          <button className="menu-btn" onClick={handleLogout}>
-            Logout
-          </button>
+
+        {user ? (
+          <div className="profile-container">
+            <motion.img
+              src={user.picture}
+              alt="Profile"
+              className="profile-pic"
+              onClick={() => setShowMenu(!showMenu)}
+              animate={{ scale: showMenu ? 1.1 : 1 }}
+              transition={{ duration: 0.2 }}
+            />
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  className="profile-menu"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="profile-email">{user.email}</div>
+                  <button onClick={handleDeleteAll}>🗑 Delete All Data</button>
+                  <button onClick={handleLogout}>🚪 Logout</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         ) : (
           <button className="menu-btn" onClick={handleLogin}>
             Login with Google
@@ -181,7 +203,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Notes Grid */}
+      {/* ---------- NOTES GRID ---------- */}
       <div className="notes-grid">
         <AnimatePresence>
           {notes.map((note) => (
@@ -190,14 +212,14 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Add Button */}
-      {loggedIn && (
+      {/* ---------- ADD BUTTON ---------- */}
+      {user && (
         <button className="add-btn" onClick={() => setEditing(true)}>
-          ✎
+          <img src="/assets/w-quill.png" alt="Add Note" width="18" height="18" />
         </button>
       )}
 
-      {/* Editor Overlay */}
+      {/* ---------- EDITOR OVERLAY ---------- */}
       {editing && (
         <div
           className="editor-overlay"
@@ -208,33 +230,22 @@ export default function Home() {
             className="editor-popup"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
           >
             <input
               type="text"
+              className="headline-input"
               placeholder="Title"
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
             />
             <textarea
+              className="content-input"
               placeholder="Write something..."
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
-            <div className="editor-actions">
-              <button className="save-btn" onClick={handleSave}>
-                Save
-              </button>
-              <button
-                className="cancel-btn"
-                onClick={() => {
-                  setEditing(false);
-                  setEditingId(null);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
           </motion.div>
         </div>
       )}

@@ -166,3 +166,58 @@
   z-index: 2;
 }
 
+
+.profile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-pic {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-pic:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.profile-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 10px 15px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.profile-menu button {
+  background: #333;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.profile-menu button:hover {
+  background: #444;
+}
+
+.profile-email {
+  color: #aaa;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+}
+
