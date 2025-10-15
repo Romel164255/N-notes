@@ -2,10 +2,25 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "./App.css";
 
-/* -------------------- COLOR THEME -------------------- */
+
+/* -------------------- COLOR THEME SETS -------------------- */
 const DARK_COLORS = ["#1a1a1a", "#232323", "#2b2b2b", "#333", "#3d3d3d", "#444", "#555"];
-const getRandomColor = () => DARK_COLORS[Math.floor(Math.random() * DARK_COLORS.length)];
-const ORANGE = "#ff5e00"; // "Nothing" orange for delete animation
+const LIGHT_COLORS = [
+  "#ffffff", // pure white
+  "#f5f5f5", // very light gray
+  "#ebebeb", // light gray
+  "#dcdcdc", // medium-light gray
+  "#c8c8c8", // soft mid-gray
+  "#b3b3b3"  // balanced medium gray
+];
+
+const ORANGE = "#D71921"; // "Nothing" red/orange accent
+
+const getRandomColor = (isDark) =>
+  (isDark ? DARK_COLORS : LIGHT_COLORS)[
+    Math.floor(Math.random() * (isDark ? DARK_COLORS.length : LIGHT_COLORS.length))
+  ];
+
 
 /* -------------------- NOTE CARD COMPONENT -------------------- */
 function NoteCard({ note, onDelete, onEdit }) {
@@ -13,7 +28,10 @@ function NoteCard({ note, onDelete, onEdit }) {
     <motion.div
       layout
       className="note-card"
-      style={{ background: note.bgColor || "#222" }}
+      style={{
+        background: note.bgColor,
+        minHeight: "fit-content", // 🧩 fit content height dynamically
+      }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{
@@ -40,6 +58,7 @@ function NoteCard({ note, onDelete, onEdit }) {
   );
 }
 
+
 /* -------------------- MAIN HOME COMPONENT -------------------- */
 export default function Home() {
   const [notes, setNotes] = useState([]);
@@ -49,7 +68,21 @@ export default function Home() {
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // theme state
   const overlayRef = useRef();
+
+  // Refs for auto resizing inputs
+  const headlineRef = useRef(null);
+  const contentRef = useRef(null);
+
+  /* -------------------- LOAD THEME FROM STORAGE -------------------- */
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setIsDarkMode(false);
+      document.body.classList.add("light-mode");
+    }
+  }, []);
 
   /* -------------------- LOGIN + FETCH NOTES -------------------- */
   useEffect(() => {
@@ -61,13 +94,13 @@ export default function Home() {
           loadNotes();
         }
       });
-  }, []);
+  }, [isDarkMode]);
 
   async function loadNotes() {
     const res = await fetch("http://localhost:5000/api/notes", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
-      setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor() })));
+      setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
     }
   }
 
@@ -88,6 +121,14 @@ export default function Home() {
 
   const triggerVibration = () => {
     if ("vibrate" in navigator) navigator.vibrate(70);
+  };
+
+  /* -------------------- AUTO RESIZE FUNCTION -------------------- */
+  const autoResize = (element) => {
+    if (element) {
+      element.style.height = "auto";
+      element.style.height = element.scrollHeight + "px";
+    }
   };
 
   /* -------------------- SAVE / EDIT / DELETE NOTES -------------------- */
@@ -117,7 +158,7 @@ export default function Home() {
       setNotes((prev) =>
         editingId
           ? prev.map((n) => (n.id === editingId ? { ...newNote, bgColor: n.bgColor } : n))
-          : [{ ...newNote, bgColor: getRandomColor() }, ...prev]
+          : [{ ...newNote, bgColor: getRandomColor(isDarkMode) }, ...prev]
       );
     }
 
@@ -163,17 +204,54 @@ export default function Home() {
     playSound(150, "square", 0.3);
   };
 
+  /* -------------------- THEME TOGGLE -------------------- */
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    document.body.classList.toggle("light-mode", !newMode);
+    localStorage.setItem("theme", newMode ? "dark" : "light"); // persist
+  };
+
+  /* -------------------- HANDLE INPUT CHANGES WITH AUTO RESIZE -------------------- */
+  const handleHeadlineChange = (e) => {
+    setHeadline(e.target.value);
+    autoResize(headlineRef.current);
+  };
+
+  const handleContentChange = (e) => {
+    setContent(e.target.value);
+    autoResize(contentRef.current);
+  };
+
+  /* -------------------- AUTO RESIZE ON EDITING OPEN OR CONTENT CHANGE -------------------- */
+  useEffect(() => {
+    if (editing) {
+      autoResize(headlineRef.current);
+      autoResize(contentRef.current);
+    }
+  }, [editing, headline, content]);
+
   /* -------------------- RENDER -------------------- */
   return (
-    <div className="app-container">
+    <div className={`app-container ${isDarkMode ? "dark" : "light"}`}>
       {/* ---------- HEADER BAR ---------- */}
       <div className="top-bar">
         <div className="Main-head">Noting</div>
 
+        {/* THEME TOGGLE BUTTON (animated flip) */}
+        <motion.button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          whileTap={{ rotateY: 180, scale: 1.2 }}
+          transition={{ duration: 0.3 }}
+        >
+          {isDarkMode ? "☀️" : "🌙"}
+        </motion.button>
+
         {user ? (
           <div className="profile-container">
             <motion.img
-              src={user.picture}
+              src={user?.picture || "/assets/default-profile.png"}
               alt="Profile"
               className="profile-pic"
               onClick={() => setShowMenu(!showMenu)}
@@ -237,14 +315,16 @@ export default function Home() {
               className="headline-input"
               placeholder="Title"
               value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
+              onChange={handleHeadlineChange}
+              ref={headlineRef}
             />
             <textarea
               className="content-input"
               placeholder="Write something..."
-              rows={4}
+              rows={1}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={handleContentChange}
+              ref={contentRef}
             />
           </motion.div>
         </div>
