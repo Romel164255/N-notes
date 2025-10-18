@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "./App.css";
 
-
 /* -------------------- COLOR THEME SETS -------------------- */
 const DARK_COLORS = ["#1a1a1a", "#232323", "#2b2b2b", "#333", "#3d3d3d", "#444", "#555"];
 const LIGHT_COLORS = [
@@ -21,7 +20,6 @@ const getRandomColor = (isDark) =>
     Math.floor(Math.random() * (isDark ? DARK_COLORS.length : LIGHT_COLORS.length))
   ];
 
-
 /* -------------------- NOTE CARD COMPONENT -------------------- */
 function NoteCard({ note, onDelete, onEdit }) {
   return (
@@ -30,15 +28,15 @@ function NoteCard({ note, onDelete, onEdit }) {
       className="note-card"
       style={{
         background: note.bgColor,
-        minHeight: "fit-content", // 🧩 fit content height dynamically
+        minHeight: "fit-content",
       }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{
         backgroundColor: ORANGE,
-        scaleX: 0, // shrink horizontally
+        scaleX: 0,
         opacity: 0,
-        originX: 1, // shrink from right to left
+        originX: 1,
         transition: { duration: 0.6, ease: "easeInOut" },
       }}
       onClick={() => onEdit(note)}
@@ -58,7 +56,6 @@ function NoteCard({ note, onDelete, onEdit }) {
   );
 }
 
-
 /* -------------------- MAIN HOME COMPONENT -------------------- */
 export default function Home() {
   const [notes, setNotes] = useState([]);
@@ -68,12 +65,14 @@ export default function Home() {
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // theme state
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const overlayRef = useRef();
 
-  // Refs for auto resizing inputs
   const headlineRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Backend URL from environment or fallback
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || "https://n-notes.onrender.com";
 
   /* -------------------- LOAD THEME FROM STORAGE -------------------- */
   useEffect(() => {
@@ -86,7 +85,7 @@ export default function Home() {
 
   /* -------------------- LOGIN + FETCH NOTES -------------------- */
   useEffect(() => {
-    fetch("http://localhost:5000/auth/me", { credentials: "include" })
+    fetch(`${backendUrl}/auth/me`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.loggedIn) {
@@ -97,7 +96,7 @@ export default function Home() {
   }, [isDarkMode]);
 
   async function loadNotes() {
-    const res = await fetch("http://localhost:5000/api/notes", { credentials: "include" });
+    const res = await fetch(`${backendUrl}/api/notes`, { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
@@ -141,8 +140,8 @@ export default function Home() {
 
     const method = editingId ? "PUT" : "POST";
     const url = editingId
-      ? `http://localhost:5000/api/notes/${editingId}`
-      : "http://localhost:5000/api/notes";
+      ? `${backendUrl}/api/notes/${editingId}`
+      : `${backendUrl}/api/notes`;
 
     const res = await fetch(url, {
       method,
@@ -171,7 +170,7 @@ export default function Home() {
   async function handleDelete(id) {
     playSound(180, "triangle", 0.2);
     triggerVibration();
-    const res = await fetch(`http://localhost:5000/api/notes/${id}`, {
+    const res = await fetch(`${backendUrl}/api/notes/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -186,9 +185,11 @@ export default function Home() {
   }
 
   /* -------------------- AUTH ACTIONS -------------------- */
-  const handleLogin = () => (window.location.href = "http://localhost:5000/auth/google");
+  const handleLogin = () => {
+    window.location.href = `${backendUrl}/auth/google`;
+  };
   const handleLogout = () =>
-    fetch("http://localhost:5000/auth/logout", { credentials: "include" }).then(() => {
+    fetch(`${backendUrl}/auth/logout`, { credentials: "include" }).then(() => {
       setUser(null);
       setNotes([]);
     });
@@ -196,7 +197,7 @@ export default function Home() {
   const handleDeleteAll = async () => {
     const confirmDelete = window.confirm("Delete all notes?");
     if (!confirmDelete) return;
-    await fetch("http://localhost:5000/api/notes/all", {
+    await fetch(`${backendUrl}/api/notes/all`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -209,7 +210,7 @@ export default function Home() {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
     document.body.classList.toggle("light-mode", !newMode);
-    localStorage.setItem("theme", newMode ? "dark" : "light"); // persist
+    localStorage.setItem("theme", newMode ? "dark" : "light");
   };
 
   /* -------------------- HANDLE INPUT CHANGES WITH AUTO RESIZE -------------------- */
@@ -234,11 +235,9 @@ export default function Home() {
   /* -------------------- RENDER -------------------- */
   return (
     <div className={`app-container ${isDarkMode ? "dark" : "light"}`}>
-      {/* ---------- HEADER BAR ---------- */}
       <div className="top-bar">
         <div className="Main-head">Noting</div>
 
-        {/* THEME TOGGLE BUTTON (animated flip) */}
         <motion.button
           className="theme-toggle"
           onClick={toggleTheme}
@@ -281,7 +280,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* ---------- NOTES GRID ---------- */}
       <div className="notes-grid">
         <AnimatePresence>
           {notes.map((note) => (
@@ -290,14 +288,12 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* ---------- ADD BUTTON ---------- */}
       {user && (
         <button className="add-btn" onClick={() => setEditing(true)}>
           <img src="/assets/w-quill.png" alt="Add Note" width="18" height="18" />
         </button>
       )}
 
-      {/* ---------- EDITOR OVERLAY ---------- */}
       {editing && (
         <div
           className="editor-overlay"
