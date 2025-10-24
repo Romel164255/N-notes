@@ -290,7 +290,7 @@ export default function Home() {
 
       {user && (
         <button className="add-btn" onClick={() => setEditing(true)}>
-          <img src="/assets/generated-image (1).png" alt="Add Note" width="18" height="18" />
+          <img src="/assets/generated-image__1___1_-removebg-preview.png" alt="Add Note" width="40" height="40" />
         </button>
       )}
 
