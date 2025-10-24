@@ -34,7 +34,11 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+<<<<<<< HEAD
+      secure: false,
+=======
+      secure: false,
+>>>>>>> origin/main
       sameSite: "lax",
     },
   })
