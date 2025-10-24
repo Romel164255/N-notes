@@ -1,0 +1,436 @@
+/* ----------------------------------------------------------
+ 🌑 NOTHING THEME STYLING — clean, minimal, red accent
+------------------------------------------------------------- */
+
+
+@font-face {
+  font-family: 'Nothing';
+  src: url('/fonts/NOTHING.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+:root {
+  --nothing-red: #d71921;
+  --radius-xl: 22px;
+  --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.08);
+  --shadow-dark: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --transition-fast: 0.25s ease;
+}
+
+
+/* Body reset + smooth transition between themes */
+body {
+  font-family: "Inter", "Nothing", sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+
+/* ----------------------------------------------------------
+ HEADER / TOP BAR
+------------------------------------------------------------- */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+.Main-head {
+  font-size: 4rem;
+  font-weight: 600;
+  font-family: 'Nothing', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+
+.theme-toggle {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.theme-toggle:hover {
+  transform: scale(1.25);
+}
+
+
+/* ----------------------------------------------------------
+ DARK MODE
+------------------------------------------------------------- */
+.app-container.dark {
+  background: radial-gradient(circle at top left, #0a0a0a, #1a1a1a 60%);
+  color: #eaeaea;
+}
+
+
+.app-container.dark .top-bar {
+  background: rgba(22, 22, 22, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-dark);
+}
+
+
+/* ----------------------------------------------------------
+ LIGHT MODE
+------------------------------------------------------------- */
+.app-container.light {
+  background: linear-gradient(to bottom right, #fafafa, #e9e9e9);
+  color: #121212;
+}
+
+
+.app-container.light .top-bar {
+  background: rgba(255, 255, 255, 0.65);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-light);
+}
+
+
+/* -------------------------------
+ NOTHING THEME PROFILE SECTION
+--------------------------------- */
+.profile-container {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+}
+
+
+/* PROFILE PIC: flat, clean, punchy red border, smooth hover */
+.profile-pic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--nothing-red);
+  background: #121212;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color 0.2s;
+  box-shadow: 0 2px 24px 1.5px rgba(215, 25, 33, 0.12);
+}
+.profile-pic:hover, .profile-pic:focus-visible {
+  transform: scale(1.07);
+  border-color: #ee262b;
+  box-shadow: 0 2px 32px 3px rgba(215, 25, 33, 0.28);
+}
+
+
+/* MENU: glassy, crisp contrast, soft radius, subtle lines */
+.profile-menu {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  min-width: 190px;
+  background: rgba(16, 16, 16, 0.90); /* near pure black glass look */
+  color: #FAFAFA;
+  border-radius: 18px;
+  padding: 18px 14px 12px 14px;
+  box-shadow: 0 4px 32px 0 rgba(0,0,0,0.32), 0 1.5px 0px 0px #242428 inset;
+  backdrop-filter: blur(10px) saturate(120%);
+  border: 1.5px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 101;
+  letter-spacing: 0.04em;
+  font-family: 'Inter', 'Roboto', Arial, sans-serif;
+}
+
+
+/* LIGHT THEME: snowy glass, dark font for max contrast */
+.app-container.light .profile-menu {
+  background: rgba(250, 250, 250, 0.88);
+  color: #181A1B;
+  box-shadow: 0 4px 32px 0 rgba(0,0,0,0.08);
+  border: 1.5px solid rgba(0,0,0,0.08);
+}
+
+
+/* MENU BUTTONS: punchy, slightly rounded, airy, no clutter */
+.profile-menu button {
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 8px 6px 8px 2px;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 9px;
+  font-family: inherit;
+  letter-spacing: .01em;
+  transition: color 0.19s, background 0.17s, padding-left 0.14s;
+}
+.profile-menu button:hover, .profile-menu button:focus-visible {
+  color: var(--nothing-red);
+  background: rgba(215,25,33,0.09);
+  padding-left: 12px;
+}
+
+
+/* DIVIDER: ultra-thin and airy, like Nothing settings */
+.profile-menu .divider {
+  height: 1px;
+  margin: 6px 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(215,25,33,0.22) 60%, rgba(255,255,255,0.12) 100%);
+  border: none;
+  opacity: 0.92;
+}
+.app-container.light .profile-menu .divider {
+  background: linear-gradient(90deg, rgba(0,0,0,0.16) 0%, rgba(215,25,33,0.13) 60%, rgba(0,0,0,0.13) 100%);
+}
+
+
+.profile-menu .note {
+  color: #bbbbbb;
+  font-size: 1rem;
+  padding-top: 7px;
+  opacity: 0.82;
+  font-weight: 400;
+}
+
+
+
+
+
+
+/* ----------------------------------------------------------
+ LOGIN / MENU BUTTON
+------------------------------------------------------------- */
+/* ----------------------------------------------------------
+  NOTHING-THEMED GOOGLE LOGIN BUTTON
+------------------------------------------------------------- */
+.menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 2px solid var(--nothing-red);
+  color: var(--nothing-red);
+  border-radius: 14px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  cursor: pointer;
+  transition: 
+    background-color 0.24s ease,
+    color 0.24s ease,
+    box-shadow 0.3s ease,
+    transform 0.2s ease;
+  box-shadow: 0 0 20px rgba(215, 25, 33, 0.2);
+  user-select: none;
+  text-transform: none;
+}
+
+
+/* Google logo style placeholder (use an inline SVG or image) */
+.menu-btn .google-icon {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 0.5px rgba(215, 25, 33, 0.6));
+}
+
+
+/* Hover & Focus states */
+.menu-btn:hover,
+.menu-btn:focus-visible {
+  background: var(--nothing-red);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(255, 69, 74, 0.9);
+  transform: scale(1.05);
+  outline: none;
+}
+
+
+/* Active press state */
+.menu-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 14px rgba(255, 0, 8, 0.8);
+}
+
+
+
+/* ----------------------------------------------------------
+ NOTES GRID - MASONRY LAYOUT
+------------------------------------------------------------- */
+.notes-grid {
+  column-count: 3;      /* Number of columns for masonry */
+  column-gap: 20px;     /* Gap between columns */
+  padding: 20px;
+}
+
+.note-card {
+  break-inside: avoid;  /* Prevent item breaking in multi-column layout */
+  margin-bottom: 20px;
+
+  position: relative;
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  color: inherit;
+  box-shadow: var(--shadow-dark);
+  overflow-wrap: break-word;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+  height: auto;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+}
+
+
+.app-container.light .note-card {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-light);
+}
+
+
+.note-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 15px rgb(255, 0, 0);
+}
+
+
+.note-title {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.note-body {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+
+/* Delete Button */
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--nothing-red);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.delete-btn:hover {
+  transform: scale(1.25);
+}
+
+
+/* ----------------------------------------------------------
+ ADD NOTE BUTTON
+------------------------------------------------------------- */
+.add-btn {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--nothing-red);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8rem;
+  box-shadow: 0 5px 20px rgba(215, 25, 33, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+.add-btn:hover {
+  transform: scale(1.15);
+}
+
+
+/* ----------------------------------------------------------
+ NOTE EDITOR POPUP
+------------------------------------------------------------- */
+.editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+
+.editor-popup {
+  background: rgba(28, 28, 28, 0.95);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  width: 400px;
+  box-shadow: var(--shadow-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app-container.light .editor-popup {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-light);
+}
+
+
+.headline-input {
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 8px;
+  border: none;
+  outline: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+}
+.content-input {
+  resize: none;
+  font-size: 0.95rem;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  line-height: 1.5;
+}
+.app-container.light .headline-input,
+.app-container.light .content-input {
+  background: rgba(240, 240, 240, 0.9);
+  color: #111;
+}
