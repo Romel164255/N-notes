@@ -8,7 +8,7 @@ function isLoggedIn(req, res, next) {
   next();
 }
 
-// Fetch user notes
+// Fetch notes
 router.get("/", isLoggedIn, async (req, res) => {
   const { id } = req.user;
   try {
@@ -22,7 +22,7 @@ router.get("/", isLoggedIn, async (req, res) => {
   }
 });
 
-// Create a note
+// Create note
 router.post("/", isLoggedIn, async (req, res) => {
   const { title, content } = req.body;
   try {
@@ -36,13 +36,10 @@ router.post("/", isLoggedIn, async (req, res) => {
   }
 });
 
-// Delete a note
+// Delete note
 router.delete("/:id", isLoggedIn, async (req, res) => {
   try {
-    await pool.query("DELETE FROM notes WHERE id=$1 AND user_id=$2", [
-      req.params.id,
-      req.user.id,
-    ]);
+    await pool.query("DELETE FROM notes WHERE id=$1 AND user_id=$2", [req.params.id, req.user.id]);
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: "Server error" });
