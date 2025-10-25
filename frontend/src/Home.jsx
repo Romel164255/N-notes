@@ -250,13 +250,14 @@ export default function Home() {
         {user ? (
           <div className="profile-container">
             <motion.img
-              src={user?.picture || "/assets/default-profile.png"}
-              alt="Profile"
-              className="profile-pic"
-              onClick={() => setShowMenu(!showMenu)}
-              animate={{ scale: showMenu ? 1.1 : 1 }}
-              transition={{ duration: 0.2 }}
-            />
+  src={user?.picture || "/assets/default-profile.png"} // show Google profile pic or fallback
+  alt="Profile"
+  className="profile-pic"
+  onClick={() => setShowMenu(!showMenu)}
+  animate={{ scale: showMenu ? 1.1 : 1 }}
+  transition={{ duration: 0.2 }}
+/>
+
             <AnimatePresence>
               {showMenu && (
                 <motion.div
