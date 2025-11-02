@@ -19,10 +19,22 @@ function NoteCard({ note, onDelete, onEdit }) {
       style={{ background: note.bgColor, minHeight: "fit-content" }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ backgroundColor: ORANGE, scaleX: 0, opacity: 0, originX: 1, transition: { duration: 0.6, ease: "easeInOut" } }}
+      exit={{
+        backgroundColor: ORANGE,
+        scaleX: 0,
+        opacity: 0,
+        originX: 1,
+        transition: { duration: 0.6, ease: "easeInOut" },
+      }}
       onClick={() => onEdit(note)}
     >
-      <button className="delete-btn" onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}>
+      <button
+        className="delete-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(note.id);
+        }}
+      >
         ✕
       </button>
       <h3 className="note-title">{note.title}</h3>
@@ -44,7 +56,8 @@ export default function Home() {
   const headlineRef = useRef(null);
   const contentRef = useRef(null);
 
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || "https://n-notes.onrender.com";
+  const backendUrl =
+    process.env.REACT_APP_BACKEND_URL || "https://n-notes.onrender.com";
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -56,8 +69,8 @@ export default function Home() {
 
   useEffect(() => {
     fetch(`${backendUrl}/auth/me`, { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.loggedIn) {
           setUser(data.user);
           loadNotes();
@@ -69,7 +82,7 @@ export default function Home() {
     const res = await fetch(`${backendUrl}/api/notes`, { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
-      setNotes(data.map(n => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
+      setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
     }
   }
 
@@ -80,45 +93,97 @@ export default function Home() {
     }
   };
 
-  const handleHeadlineChange = (e) => { setHeadline(e.target.value); autoResize(headlineRef.current); };
-  const handleContentChange = (e) => { setContent(e.target.value); autoResize(contentRef.current); };
+  const handleHeadlineChange = (e) => {
+    setHeadline(e.target.value);
+    autoResize(headlineRef.current);
+  };
+
+  const handleContentChange = (e) => {
+    setContent(e.target.value);
+    autoResize(contentRef.current);
+  };
 
   const handleSave = async () => {
-    if (!headline.trim() && !content.trim()) {
+    const trimmedHeadline = headline.trim();
+    const trimmedContent = content.trim();
+
+    // Case 1: New note but empty → cancel
+    if (!trimmedHeadline && !trimmedContent && !editingId) {
       setEditing(false);
       setEditingId(null);
       return;
     }
 
+    // Case 2: Editing but unchanged → close only
+    if (editingId) {
+      const currentNote = notes.find((n) => n.id === editingId);
+      if (
+        currentNote &&
+        currentNote.title === trimmedHeadline &&
+        currentNote.content === trimmedContent
+      ) {
+        setEditing(false);
+        setEditingId(null);
+        return;
+      }
+    }
+
     const method = editingId ? "PUT" : "POST";
-    const url = editingId ? `${backendUrl}/api/notes/${editingId}` : `${backendUrl}/api/notes`;
+    const url = editingId
+      ? `${backendUrl}/api/notes/${editingId}`
+      : `${backendUrl}/api/notes`;
 
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: headline, content }),
+      body: JSON.stringify({ title: trimmedHeadline, content: trimmedContent }),
     });
 
     if (res.ok) {
       const newNote = await res.json();
-      setNotes(prev =>
-        editingId ? prev.map(n => (n.id === editingId ? { ...newNote, bgColor: n.bgColor } : n))
-                  : [{ ...newNote, bgColor: getRandomColor(isDarkMode) }, ...prev]
+
+      setNotes((prev) =>
+        editingId
+          ? prev.map((n) =>
+              n.id === editingId ? { ...newNote, bgColor: n.bgColor } : n
+            )
+          : [{ ...newNote, bgColor: getRandomColor(isDarkMode) }, ...prev]
       );
     }
 
-    setHeadline(""); setContent(""); setEditing(false); setEditingId(null);
+    // Reset editor
+    setHeadline("");
+    setContent("");
+    setEditing(false);
+    setEditingId(null);
   };
 
   const handleDelete = async (id) => {
-    const res = await fetch(`${backendUrl}/api/notes/${id}`, { method: "DELETE", credentials: "include" });
-    if (res.ok) setNotes(prev => prev.filter(n => n.id !== id));
+    const res = await fetch(`${backendUrl}/api/notes/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const handleEdit = (note) => { setHeadline(note.title); setContent(note.content); setEditingId(note.id); setEditing(true); };
-  const handleLogin = () => { window.location.href = `${backendUrl}/auth/google`; };
-  const handleLogout = () => fetch(`${backendUrl}/auth/logout`, { credentials: "include" }).then(() => { setUser(null); setNotes([]); });
+  const handleEdit = (note) => {
+    setHeadline(note.title);
+    setContent(note.content);
+    setEditingId(note.id);
+    setEditing(true);
+  };
+
+  const handleLogin = () => {
+    window.location.href = `${backendUrl}/auth/google`;
+  };
+
+  const handleLogout = () => {
+    fetch(`${backendUrl}/auth/logout`, { credentials: "include" }).then(() => {
+      setUser(null);
+      setNotes([]);
+    });
+  };
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
@@ -131,12 +196,18 @@ export default function Home() {
     <div className={`app-container ${isDarkMode ? "dark" : "light"}`}>
       <div className="top-bar">
         <div className="Main-head">Noting</div>
-        <motion.button className="theme-toggle" onClick={toggleTheme}>{isDarkMode ? "☀️" : "🌙"}</motion.button>
+        <motion.button className="theme-toggle" onClick={toggleTheme}>
+          {isDarkMode ? "☀️" : "🌙"}
+        </motion.button>
 
         {user ? (
           <div className="profile-container">
-            <motion.img src={user?.picture || "/assets/default-profile.png"} alt="Profile"
-              className="profile-pic" onClick={() => setShowMenu(!showMenu)} />
+            <motion.img
+              src={user?.picture || "/assets/default-profile.png"}
+              alt="Profile"
+              className="profile-pic"
+              onClick={() => setShowMenu(!showMenu)}
+            />
             <AnimatePresence>
               {showMenu && (
                 <motion.div className="profile-menu">
@@ -147,29 +218,58 @@ export default function Home() {
             </AnimatePresence>
           </div>
         ) : (
-          <button className="menu-btn" onClick={handleLogin}>Login with Google</button>
+          <button className="menu-btn" onClick={handleLogin}>
+            Login with Google
+          </button>
         )}
       </div>
 
       <div className="notes-grid">
         <AnimatePresence>
-          {notes.map(note => (
-            <NoteCard key={note.id} note={note} onDelete={handleDelete} onEdit={handleEdit} />
+          {notes.map((note) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
           ))}
         </AnimatePresence>
       </div>
 
       {user && (
         <button className="add-btn" onClick={() => setEditing(true)}>
-          <img src="/assets/generated-image__1___1_-removebg-preview.png" alt="Add Note" width="40" height="40" />
+          <img
+            src="/assets/generated-image__1___1_-removebg-preview.png"
+            alt="Add Note"
+            width="40"
+            height="40"
+          />
         </button>
       )}
 
       {editing && (
-        <div className="editor-overlay" ref={overlayRef} onClick={(e) => e.target === overlayRef.current && handleSave()}>
+        <div
+          className="editor-overlay"
+          ref={overlayRef}
+          onClick={(e) => e.target === overlayRef.current && handleSave()}
+        >
           <motion.div className="editor-popup">
-            <input type="text" className="headline-input" placeholder="Title" value={headline} onChange={handleHeadlineChange} ref={headlineRef} />
-            <textarea className="content-input" placeholder="Write something..." value={content} onChange={handleContentChange} ref={contentRef} />
+            <input
+              type="text"
+              className="headline-input"
+              placeholder="Title"
+              value={headline}
+              onChange={handleHeadlineChange}
+              ref={headlineRef}
+            />
+            <textarea
+              className="content-input"
+              placeholder="Write something..."
+              value={content}
+              onChange={handleContentChange}
+              ref={contentRef}
+            />
           </motion.div>
         </div>
       )}

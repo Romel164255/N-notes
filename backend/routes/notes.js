@@ -9,13 +9,11 @@ function isLoggedIn(req, res, next) {
   next();
 }
 
-// Secure Key (MUST set in .env as a 32-byte HEX string)
 const ENC_KEY = Buffer.from(process.env.ENC_KEY, "hex");
 
-// Encrypt function AES-256-GCM
+// Encrypt using AES-256-GCM
 function encrypt(text) {
   if (!text) return null;
-
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", ENC_KEY, iv);
 
@@ -30,10 +28,7 @@ function encrypt(text) {
 function decrypt(data) {
   if (!data) return "";
   const parts = data.split(":");
-  if (parts.length !== 3) {
-    // Fallback for old unencrypted notes
-    return data;
-  }
+  if (parts.length !== 3) return data; // fallback for old unencrypted notes
 
   const [ivHex, authTagHex, encrypted] = parts;
   const iv = Buffer.from(ivHex, "hex");
@@ -47,7 +42,7 @@ function decrypt(data) {
   return decrypted;
 }
 
-// ✅ Fetch Notes - with decryption
+// ✅ Fetch Notes
 router.get("/", isLoggedIn, async (req, res) => {
   try {
     const result = await pool.query(
@@ -55,7 +50,7 @@ router.get("/", isLoggedIn, async (req, res) => {
       [req.user.id]
     );
 
-    const decryptedNotes = result.rows.map(note => ({
+    const decryptedNotes = result.rows.map((note) => ({
       ...note,
       title: decrypt(note.title),
       content: decrypt(note.content),
@@ -68,7 +63,7 @@ router.get("/", isLoggedIn, async (req, res) => {
   }
 });
 
-// ✅ Create Note - Encrypt before storing
+// ✅ Create Note
 router.post("/", isLoggedIn, async (req, res) => {
   const { title, content } = req.body;
   try {
@@ -83,7 +78,6 @@ router.post("/", isLoggedIn, async (req, res) => {
     const note = result.rows[0];
     note.title = decrypt(note.title);
     note.content = decrypt(note.content);
-
     res.json(note);
   } catch (err) {
     console.error("Encrypt Insert Error:", err);
@@ -91,7 +85,37 @@ router.post("/", isLoggedIn, async (req, res) => {
   }
 });
 
-// ✅ Delete Note - No change needed
+// ✅ Update Note (Edit)
+router.put("/:id", isLoggedIn, async (req, res) => {
+  const { title, content } = req.body;
+  const { id } = req.params;
+
+  try {
+    const encTitle = encrypt(title || "");
+    const encContent = encrypt(content || "");
+
+    const result = await pool.query(
+      `UPDATE notes 
+       SET title=$1, content=$2, updated_at=NOW() 
+       WHERE id=$3 AND user_id=$4 
+       RETURNING *`,
+      [encTitle, encContent, id, req.user.id]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "Note not found" });
+
+    const note = result.rows[0];
+    note.title = decrypt(note.title);
+    note.content = decrypt(note.content);
+    res.json(note);
+  } catch (err) {
+    console.error("Encrypt Update Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ✅ Delete Note
 router.delete("/:id", isLoggedIn, async (req, res) => {
   try {
     await pool.query("DELETE FROM notes WHERE id=$1 AND user_id=$2", [
@@ -99,7 +123,8 @@ router.delete("/:id", isLoggedIn, async (req, res) => {
       req.user.id,
     ]);
     res.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("Delete Error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
