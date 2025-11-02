@@ -59,6 +59,7 @@ export default function Home() {
   const backendUrl =
     process.env.REACT_APP_BACKEND_URL || "https://n-notes.onrender.com";
 
+  // 🌓 Theme setup
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "light") {
@@ -67,6 +68,7 @@ export default function Home() {
     }
   }, []);
 
+  // 👤 User + Notes fetch
   useEffect(() => {
     fetch(`${backendUrl}/auth/me`, { credentials: "include" })
       .then((res) => res.json())
@@ -75,17 +77,23 @@ export default function Home() {
           setUser(data.user);
           loadNotes();
         }
-      });
+      })
+      .catch((err) => console.error("Auth fetch error:", err));
   }, [isDarkMode]);
 
   async function loadNotes() {
-    const res = await fetch(`${backendUrl}/api/notes`, { credentials: "include" });
-    if (res.ok) {
-      const data = await res.json();
-      setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
+    try {
+      const res = await fetch(`${backendUrl}/api/notes`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setNotes(data.map((n) => ({ ...n, bgColor: getRandomColor(isDarkMode) })));
+      }
+    } catch (err) {
+      console.error("Failed to load notes:", err);
     }
   }
 
+  // 📝 Auto-resize helper
   const autoResize = (el) => {
     if (el) {
       el.style.height = "auto";
@@ -103,18 +111,17 @@ export default function Home() {
     autoResize(contentRef.current);
   };
 
+  // 💾 Save / Update
   const handleSave = async () => {
     const trimmedHeadline = headline.trim();
     const trimmedContent = content.trim();
 
-    // Case 1: New note but empty → cancel
     if (!trimmedHeadline && !trimmedContent && !editingId) {
       setEditing(false);
       setEditingId(null);
       return;
     }
 
-    // Case 2: Editing but unchanged → close only
     if (editingId) {
       const currentNote = notes.find((n) => n.id === editingId);
       if (
@@ -133,16 +140,24 @@ export default function Home() {
       ? `${backendUrl}/api/notes/${editingId}`
       : `${backendUrl}/api/notes`;
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ title: trimmedHeadline, content: trimmedContent }),
-    });
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: trimmedHeadline,
+          content: trimmedContent,
+        }),
+      });
 
-    if (res.ok) {
-      const newNote = await res.json();
+      const text = await res.text();
+      if (!res.ok) {
+        console.error("Save failed:", res.status, text);
+        return;
+      }
 
+      const newNote = JSON.parse(text);
       setNotes((prev) =>
         editingId
           ? prev.map((n) =>
@@ -150,23 +165,30 @@ export default function Home() {
             )
           : [{ ...newNote, bgColor: getRandomColor(isDarkMode) }, ...prev]
       );
+    } catch (err) {
+      console.error("Network error during save:", err);
+    } finally {
+      setHeadline("");
+      setContent("");
+      setEditing(false);
+      setEditingId(null);
     }
-
-    // Reset editor
-    setHeadline("");
-    setContent("");
-    setEditing(false);
-    setEditingId(null);
   };
 
+  // ❌ Delete
   const handleDelete = async (id) => {
-    const res = await fetch(`${backendUrl}/api/notes/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id));
+    try {
+      const res = await fetch(`${backendUrl}/api/notes/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
   };
 
+  // ✏️ Edit
   const handleEdit = (note) => {
     setHeadline(note.title);
     setContent(note.content);
@@ -174,6 +196,7 @@ export default function Home() {
     setEditing(true);
   };
 
+  // 🔐 Auth controls
   const handleLogin = () => {
     window.location.href = `${backendUrl}/auth/google`;
   };
@@ -185,6 +208,7 @@ export default function Home() {
     });
   };
 
+  // 🌓 Theme toggle
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
@@ -210,7 +234,12 @@ export default function Home() {
             />
             <AnimatePresence>
               {showMenu && (
-                <motion.div className="profile-menu">
+                <motion.div
+                  className="profile-menu"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
                   <div className="profile-email">{user.email}</div>
                   <button onClick={handleLogout}>🚪 Logout</button>
                 </motion.div>
@@ -224,6 +253,7 @@ export default function Home() {
         )}
       </div>
 
+      {/* 🗒 Notes Grid */}
       <div className="notes-grid">
         <AnimatePresence>
           {notes.map((note) => (
@@ -237,6 +267,7 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
+      {/* ➕ Add Button */}
       {user && (
         <button className="add-btn" onClick={() => setEditing(true)}>
           <img
@@ -248,13 +279,20 @@ export default function Home() {
         </button>
       )}
 
+      {/* ✍️ Editor Popup */}
       {editing && (
         <div
           className="editor-overlay"
           ref={overlayRef}
-          onClick={(e) => e.target === overlayRef.current && handleSave()}
+          onClick={(e) => {
+            if (e.target === overlayRef.current) handleSave();
+          }}
         >
-          <motion.div className="editor-popup">
+          <motion.div
+            className="editor-popup"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+          >
             <input
               type="text"
               className="headline-input"
