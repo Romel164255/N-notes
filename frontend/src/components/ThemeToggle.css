@@ -1,0 +1,31 @@
+/* index.css */
+
+/* ...your existing global styles... */
+
+/* Toggle switch styles */
+.toggle {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  background: #ccc;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.toggle::before {
+  content: "";
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.toggle.active {
+  background: #222;
+}
+.toggle.active::before {
+  transform: translateX(30px);
+}
