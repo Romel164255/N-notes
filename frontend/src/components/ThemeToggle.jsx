@@ -1,25 +1,36 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./ThemeToggle.css";
-import sunIcon from "../assets/favicon.svg";
-import moonIcon from "../assets/favicon-dark.svg";
 
-export default function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false);
+export default function ThemeToggle({ onToggle }) {
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem("theme") === "dark"
+  );
 
+  // Handle dark/light mode + favicon
   useEffect(() => {
-    document.body.classList.toggle("dark-mode", darkMode);
-  }, [darkMode]);
+    document.body.classList.toggle("light-mode", !isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+
+    // 🔄 Tell Home.jsx the theme has changed
+    if (onToggle) onToggle(isDark);
+
+    // 🎨 Swap favicon dynamically
+    const favicon = document.querySelector("link[rel='icon']");
+    if (favicon) {
+      favicon.href = isDark
+        ? "/assets/favicon-dark.svg"
+        : "/assets/favicon.svg";
+    }
+  }, [isDark]);
 
   return (
-    <button
-      className={`theme-toggle ${darkMode ? "dark" : "light"}`}
-      onClick={() => setDarkMode(!darkMode)}
-    >
-      <img
-        src={darkMode ? moonIcon : sunIcon}
-        alt={darkMode ? "Dark mode" : "Light mode"}
-        className="toggle-icon"
+    <label className="switch">
+      <input
+        type="checkbox"
+        checked={isDark}
+        onChange={() => setIsDark(!isDark)}
       />
-    </button>
+      <span className="slider round"></span>
+    </label>
   );
 }
