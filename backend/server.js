@@ -14,73 +14,57 @@ import authRoutes from "./routes/auth.js";
 import notesRoutes from "./routes/notes.js";
 
 const app = express();
+app.set("trust proxy", 1); // Required for secure cookies on Render
 
-// ✅ Trust proxy so secure cookies work on Render
-app.set("trust proxy", 1);
-
-// ✅ Middleware setup
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ Allow both Vercel frontends
+// ✅ Only allow mobile frontend + temporary deploy URLs
 const allowedOrigins = [
-   "https://n-notes-eight.vercel.app",
-      "https://n-notes-mobile.vercel.app",
-      "https://n-notes-mobile-git-main-romels-projects-7c462762.vercel.app",
-      "https://n-notes-mobile-ds6njxte5-romels-projects-7c462762.vercel.app"
+  "https://n-notes-mobile.vercel.app",
+  "https://n-notes-mobile-git-main-romels-projects-7c462762.vercel.app",
+  "https://n-notes-mobile-ds6njxte5-romels-projects-7c462762.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        callback(new Error("Blocked by CORS"));
       }
     },
     credentials: true,
   })
 );
 
-// ✅ Persistent PostgreSQL-backed session store
 const PgStore = connectPgSimple(session);
 
 app.use(
   session({
-    store: new PgStore({
-      pool,
-      tableName: "session",
-    }),
+    store: new PgStore({ pool, tableName: "session" }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,       // only over HTTPS
-      sameSite: "none",   // required for OAuth and cross-site
+      secure: true,
+      sameSite: "none", // Needed for cross-site cookies
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   })
 );
 
-// ✅ Initialize Passport for Google OAuth
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Routes
 app.use("/auth", authRoutes);
 app.use("/api/notes", notesRoutes);
 
-// ✅ Health check
-app.get("/", (req, res) => {
-  res.send("✅ Backend running fine with persistent, first-party sessions!");
-});
+app.get("/", (req, res) => res.send("✅ Backend running fine for mobile app!"));
 
-// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
 export { pool };
