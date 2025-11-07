@@ -55,9 +55,9 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const overlayRef = useRef();
 
-  const backendUrl =
-    process.env.REACT_APP_BACKEND_URL || "https://n-notes.onrender.com";
+ const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
 
+ 
   // 👤 Fetch user + notes
   useEffect(() => {
     fetch(`${backendUrl}/auth/me`, { credentials: "include" })
