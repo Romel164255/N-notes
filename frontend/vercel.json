@@ -1,23 +1,12 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://n-notes.onrender.com/api/$1" },
-    { "source": "/auth/(.*)", "destination": "https://n-notes.onrender.com/auth/$1" }
-  ],
-  "redirects": [
     {
-      "source": "/auth/google/callback",
-      "destination": "https://n-notes.onrender.com/auth/google/callback",
-      "permanent": false
-    }
-  ],
-  "headers": [
+      "source": "/api/(.*)",
+      "destination": "https://n-notes.onrender.com/api/$1"
+    },
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "https://n-notes-eight.vercel.app" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
-      ]
+      "source": "/auth/(.*)",
+      "destination": "https://n-notes.onrender.com/auth/$1"
     }
   ]
 }
