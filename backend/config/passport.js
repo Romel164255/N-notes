@@ -6,57 +6,81 @@ import { pool } from "../db.js";
 
 dotenv.config();
 
+// ✅ Debug check for environment variable correctness
+if (!process.env.GOOGLE_CALLBACK_URL) {
+  console.error("❌ Missing GOOGLE_CALLBACK_URL in environment!");
+} else {
+  console.log("✅ Using Google Callback URL:", process.env.GOOGLE_CALLBACK_URL.trim());
+}
+
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      clientID: process.env.GOOGLE_CLIENT_ID?.trim(),
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim(),
+      callbackURL: process.env.GOOGLE_CALLBACK_URL?.trim(),
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const googleSub = profile.id;
-        const hash = crypto.createHash("sha256").update(googleSub).digest("hex");
         const email = profile.emails?.[0]?.value || null;
         const name = profile.displayName || null;
-        const picture = profile.photos?.[0]?.value || null; // new: get profile pic
+        const picture = profile.photos?.[0]?.value || null;
 
-        // Check if user exists
-        let result = await pool.query("SELECT * FROM users WHERE google_sub_hash = $1", [hash]);
+        // Hash Google 'sub' ID for additional security
+        const hash = crypto.createHash("sha256").update(googleSub).digest("hex");
+
+        // 🔍 Check if user exists
+        let result = await pool.query(
+          "SELECT * FROM users WHERE google_sub_hash = $1",
+          [hash]
+        );
+
+        let user;
 
         if (result.rows.length === 0) {
-          // Insert new user with picture
-          result = await pool.query(
-            `INSERT INTO users (google_sub_hash, email, name, google_id, picture)
-             VALUES ($1, $2, $3, $4, $5)
+          // 🆕 Insert new user
+          const insert = await pool.query(
+            `INSERT INTO users (google_sub_hash, email, name, google_id, picture, last_seen)
+             VALUES ($1, $2, $3, $4, $5, NOW())
              RETURNING *`,
             [hash, email, name, googleSub, picture]
           );
+          user = insert.rows[0];
+          console.log("✅ New user created:", email || name);
         } else {
-          // Update last_seen and picture if user exists
+          user = result.rows[0];
+          // 🕓 Update last_seen + picture
           await pool.query(
             "UPDATE users SET last_seen = NOW(), picture = $1 WHERE id = $2",
-            [picture, result.rows[0].id]
+            [picture, user.id]
           );
+          console.log("✅ Existing user logged in:", email || name);
         }
 
-        return done(null, result.rows[0]);
+        return done(null, user);
       } catch (err) {
-        console.error("❌ GoogleStrategy Error:", err);
-        done(err, null);
+        console.error("❌ GoogleStrategy Error:", err.message);
+        return done(err, null);
       }
     }
   )
 );
 
-// Serialize and deserialize user
-passport.serializeUser((user, done) => done(null, user.id));
+// ✅ Serialize user ID into the session
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
 
+// ✅ Deserialize user from the session
 passport.deserializeUser(async (id, done) => {
   try {
     const res = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
     done(null, res.rows[0]);
   } catch (err) {
+    console.error("❌ Deserialize Error:", err.message);
     done(err, null);
   }
 });
+
+export default passport;
