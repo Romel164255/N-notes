@@ -47,7 +47,7 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: "lax", // ✅ first-party, persistent
+      sameSite: "none", // ✅ first-party, persistent
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   })
