@@ -24,8 +24,10 @@ app.use(express.json());
 
 // ✅ Allow both Vercel frontends
 const allowedOrigins = [
-  "https://n-notes-eight.vercel.app",
-  "https://n-notes-mobile.vercel.app"
+   "https://n-notes-eight.vercel.app",
+      "https://n-notes-mobile.vercel.app",
+      "https://n-notes-mobile-git-main-romels-projects-7c462762.vercel.app",
+      "https://n-notes-mobile-ds6njxte5-romels-projects-7c462762.vercel.app"
 ];
 
 app.use(
