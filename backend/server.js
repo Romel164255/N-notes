@@ -19,11 +19,10 @@ app.set("trust proxy", 1); // Required for secure cookies on Render
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ Only allow mobile frontend + temporary deploy URLs
-const allowedOrigins = [
-   process.env.CLIENT_URL,  // e.g. https://n-notes-zeta.vercel.app
-  "http://localhost:3000" 
-];
+const allowedOrigins = process.env.CLIENT_URLS
+  ? process.env.CLIENT_URLS.split(",").map(url => url.trim()).concat("http://localhost:3000")
+  : ["http://localhost:3000"];
+
 
 app.use(
   cors({
