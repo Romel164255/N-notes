@@ -15,23 +15,26 @@ import notesRoutes from "./routes/notes.js";
 
 const app = express();
 
-// ✅ Trust proxy for secure cookies on Render
+// ✅ Trust proxy for secure cookies
 app.set("trust proxy", 1);
 
-// ✅ Middleware setup
 app.use(cookieParser());
 app.use(express.json());
 
+// ✅ Allow both web + mobile Vercel frontends
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: [
+      "https://n-notes-eight.vercel.app",
+      "https://n-notes-mobile.vercel.app"
+    ],
     credentials: true,
   })
 );
 
-// ✅ Use PostgreSQL for persistent sessions
 const PgStore = connectPgSimple(session);
 
+// ✅ Persistent PostgreSQL-backed session
 app.use(
   session({
     store: new PgStore({
@@ -44,28 +47,25 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: "none",
-      domain: ".vercel.app", // ✅ Key fix for TWA persistence
+      sameSite: "lax", // ✅ first-party, persistent
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   })
 );
 
-
-
-// ✅ Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Routes
 app.use("/auth", authRoutes);
 app.use("/api/notes", notesRoutes);
 
-// ✅ Health check
-app.get("/", (req, res) => res.send("✅ Backend is running fine & sessions are persistent!"));
+app.get("/", (req, res) =>
+  res.send("✅ Backend running fine with persistent, first-party sessions!")
+);
 
-// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ Server running on port ${PORT}`)
+);
 
 export { pool };
