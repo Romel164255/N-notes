@@ -15,26 +15,35 @@ import notesRoutes from "./routes/notes.js";
 
 const app = express();
 
-// ✅ Trust proxy for secure cookies
+// ✅ Trust proxy so secure cookies work on Render
 app.set("trust proxy", 1);
 
+// ✅ Middleware setup
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ Allow both web + mobile Vercel frontends
+// ✅ Allow both Vercel frontends
+const allowedOrigins = [
+  "https://n-notes-eight.vercel.app",
+  "https://n-notes-mobile.vercel.app"
+];
+
 app.use(
   cors({
-    origin: [
-      "https://n-notes-eight.vercel.app",
-      "https://n-notes-mobile.vercel.app"
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
 
+// ✅ Persistent PostgreSQL-backed session store
 const PgStore = connectPgSimple(session);
 
-// ✅ Persistent PostgreSQL-backed session
 app.use(
   session({
     store: new PgStore({
@@ -46,26 +55,30 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none", // ✅ first-party, persistent
+      secure: true,       // only over HTTPS
+      sameSite: "none",   // required for OAuth and cross-site
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   })
 );
 
+// ✅ Initialize Passport for Google OAuth
 app.use(passport.initialize());
 app.use(passport.session());
 
+// ✅ Routes
 app.use("/auth", authRoutes);
 app.use("/api/notes", notesRoutes);
 
-app.get("/", (req, res) =>
-  res.send("✅ Backend running fine with persistent, first-party sessions!")
-);
+// ✅ Health check
+app.get("/", (req, res) => {
+  res.send("✅ Backend running fine with persistent, first-party sessions!");
+});
 
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`✅ Server running on port ${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
 
 export { pool };
