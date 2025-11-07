@@ -21,9 +21,8 @@ app.use(express.json());
 
 // ✅ Only allow mobile frontend + temporary deploy URLs
 const allowedOrigins = [
-  "https://n-notes-mobile.vercel.app",
-  "https://n-notes-mobile-git-main-romels-projects-7c462762.vercel.app",
-  "https://n-notes-mobile-ds6njxte5-romels-projects-7c462762.vercel.app"
+   process.env.CLIENT_URL,  // e.g. https://n-notes-zeta.vercel.app
+  "http://localhost:3000" 
 ];
 
 app.use(
