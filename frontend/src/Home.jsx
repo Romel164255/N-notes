@@ -55,7 +55,9 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const overlayRef = useRef();
 
- const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
+ const backendUrl =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 
  
   // 👤 Fetch user + notes
