@@ -6,19 +6,24 @@ import { pool } from "../db.js";
 
 dotenv.config();
 
-// ✅ Debug check for environment variable correctness
-if (!process.env.GOOGLE_CALLBACK_URL) {
-  console.error("❌ Missing GOOGLE_CALLBACK_URL in environment!");
+// ✅ Determine which callback URL to use
+const callbackURL =
+  process.env.GOOGLE_CALLBACK_URL_FIXED?.trim() ||
+  process.env.GOOGLE_CALLBACK_URL?.trim();
+
+if (!callbackURL) {
+  console.error("❌ No valid Google callback URL found in environment variables!");
 } else {
-  console.log("✅ Using Google Callback URL:", process.env.GOOGLE_CALLBACK_URL.trim());
+  console.log("✅ Using Google Callback URL:", callbackURL);
 }
 
+// ✅ Initialize Google OAuth strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID?.trim(),
       clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim(),
-      callbackURL: process.env.GOOGLE_CALLBACK_URL?.trim(),
+      callbackURL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -31,7 +36,7 @@ passport.use(
         const hash = crypto.createHash("sha256").update(googleSub).digest("hex");
 
         // 🔍 Check if user exists
-        let result = await pool.query(
+        const result = await pool.query(
           "SELECT * FROM users WHERE google_sub_hash = $1",
           [hash]
         );
