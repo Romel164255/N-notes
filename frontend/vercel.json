@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://n-notes.onrender.com/api/$1" },
+    { "source": "/auth/(.*)", "destination": "https://n-notes.onrender.com/auth/$1" }
+  ]
+}
