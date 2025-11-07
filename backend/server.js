@@ -35,20 +35,23 @@ const PgStore = connectPgSimple(session);
 app.use(
   session({
     store: new PgStore({
-      pool, // your existing PostgreSQL connection
-      tableName: "session", // session table name
+      pool,
+      tableName: "session",
     }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true, // required for HTTPS + TWA
-      sameSite: "none", // required for cross-domain cookies
+      secure: true,
+      sameSite: "none",
+      domain: ".vercel.app", // ✅ Key fix for TWA persistence
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   })
 );
+
+
 
 // ✅ Initialize Passport
 app.use(passport.initialize());
