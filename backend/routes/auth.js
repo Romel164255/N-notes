@@ -3,10 +3,10 @@ import passport from "passport";
 
 const router = express.Router();
 
-// 🧠 Google login entry
+// 🧠 Start Google login
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// 🧠 Google OAuth callback
+// 🧠 Handle Google callback
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
@@ -17,9 +17,9 @@ router.get(
         ? process.env.CLIENT_URLS.split(",").map(url => url.trim())
         : [];
 
-      // ✅ Detect which site started the login (from headers)
+      // ✅ Detect which domain initiated login
       const origin = req.get("origin") || req.get("referer");
-      let redirectTo = allowedUrls[0]; // fallback to first in list
+      let redirectTo = allowedUrls[0]; // fallback to first
 
       if (origin) {
         const match = allowedUrls.find(url => origin.startsWith(url));
@@ -30,21 +30,19 @@ router.get(
       res.redirect(redirectTo);
     } catch (error) {
       console.error("❌ Redirect error:", error.message);
-      res.redirect(process.env.CLIENT_URL || "/");
+      res.redirect(allowedUrls[0] || "/");
     }
   }
 );
 
-// 🧠 Get current user session
+// 🧠 Return current authenticated user
 router.get("/me", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({ loggedIn: true, user: req.user });
-  } else {
-    res.status(401).json({ loggedIn: false });
-  }
+  res.json(req.isAuthenticated()
+    ? { loggedIn: true, user: req.user }
+    : { loggedIn: false });
 });
 
-// 🧠 Logout endpoint
+// 🧠 Logout
 router.get("/logout", (req, res, next) => {
   req.logout(err => {
     if (err) return next(err);
